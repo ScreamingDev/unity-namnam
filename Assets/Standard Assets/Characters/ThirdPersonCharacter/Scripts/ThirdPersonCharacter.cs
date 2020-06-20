@@ -36,10 +36,17 @@ namespace UnityStandardAssets.Characters.ThirdPerson
 			m_OrigGroundCheckDistance = m_GroundCheckDistance;
 		}
 
-
+		/**
+		 * @deprecated
+		 */
 		public void Move(Vector3 move, bool crouch, bool jump)
 		{
+			Move(move);
+		}
 
+
+		public void Move(Vector3 move)
+		{
 			// convert the world relative moveInput vector into a local-relative
 			// turn amount and forward amount required to head in the desired
 			// direction.

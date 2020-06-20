@@ -16,31 +16,21 @@ namespace UnityStandardAssets.Characters.ThirdPerson
         
         private void Start()
         {
-            // get the transform of the main camera
-            if (Camera.main != null)
-            {
-                m_Cam = Camera.main.transform;
-            }
-            else
+            if (null == Camera.main)
             {
                 Debug.LogWarning(
                     "Warning: no main camera found. Third person character needs a Camera tagged \"MainCamera\", for camera-relative controls.", gameObject);
                 // we use self-relative controls in this case, which probably isn't what the user wants, but hey, we warned them!
+
+                return;
             }
+            
+            // get the transform of the main camera
+            m_Cam = Camera.main.transform;
 
             // get the third person character ( this should never be null due to require component )
             m_Character = GetComponent<ThirdPersonCharacter>();
         }
-
-
-        private void Update()
-        {
-            if (!m_Jump)
-            {
-                m_Jump = CrossPlatformInputManager.GetButtonDown("Jump");
-            }
-        }
-
 
         // Fixed update is called in sync with physics
         private void FixedUpdate()
@@ -49,21 +39,9 @@ namespace UnityStandardAssets.Characters.ThirdPerson
             float h = CrossPlatformInputManager.GetAxis("Horizontal");
             float v = CrossPlatformInputManager.GetAxis("Vertical");
 
-            Debug.Log(String.Format("{0} {1}", h, v));
-            // calculate camera relative direction to move:
-            m_CamForward = Vector3.Scale(m_Cam.forward, new Vector3(1, 0, 1)).normalized;
-            m_Move = v*m_CamForward + h*m_Cam.right;
-            
-            Debug.Log(String.Format("{0} {1} {2}", m_Move.x, m_Move.y, m_Move.z));
-
-#if !MOBILE_INPUT
-			// walk speed multiplier
-	        if (Input.GetKey(KeyCode.LeftShift)) m_Move *= 0.5f;
-#endif
-
-            // pass all parameters to the character control script
-            m_Character.Move(m_Move, false, m_Jump);
-            m_Jump = false;
+            m_Character.Move(
+                new Vector3(h*1,0,v*1)
+            );
         }
 
         public ThirdPersonCharacter Character()
