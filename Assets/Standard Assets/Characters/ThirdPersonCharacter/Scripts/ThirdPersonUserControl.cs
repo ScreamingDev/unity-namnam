@@ -31,13 +31,17 @@ namespace UnityStandardAssets.Characters.ThirdPerson
         // Fixed update is called in sync with physics
         private void FixedUpdate()
         {
+            if (Input.GetMouseButton(0))
+            {
+                // Mouse took control
+                return;
+            }
+            
             // read inputs
             float h = CrossPlatformInputManager.GetAxis("Horizontal");
             float v = CrossPlatformInputManager.GetAxis("Vertical");
 
-            m_Character.Move(
-                new Vector3(h*1,0,v*1)
-            );
+            m_Character.Move(new Vector3(h,0,v));
         }
 
         public ThirdPersonCharacter Character()

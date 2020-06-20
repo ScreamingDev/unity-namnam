@@ -6,75 +6,87 @@ namespace Game.Character
 {
     public class MoveToClickPoint : MonoBehaviour
     {
-        public GameObject character;
 
-        private Rigidbody body;
-        private ThirdPersonUserControl ctrl;
+        // Usually the ThirdPersonController group 
+        public GameObject target;
+       
+        // The game char that is controlled
+        private ThirdPersonCharacter _character;
+        
+        // Body of the players character
+        private Rigidbody _body;
+        
+        // Player view / camera
+        private Camera _mainCam;
+        
+        // Mouse-Distance-Scaling
+        public float pointerSneakRange = 100.0f;
 
-        private Vector3 movement;
-
-        private float update = 0.0f;
-
-        private Vector3 xzOnly;
-        private Vector3 xzPlus = new Vector3(1,0,1);
-        private Vector3 xzMinus = new Vector3(1,0,1);
+        // Reserve memory for often used information ...
+        private RaycastHit _hit; 
+        private Vector3 _movement;
+        private Ray _ray;
+        private readonly Vector3 _one = new Vector3(1, 0, 1);
+        // ... instead of generating such things on-the-fly 60 times per second 
 
         private void Start()
         {
-            body = character.GetComponent<Rigidbody>();
-            ctrl = character.GetComponent<ThirdPersonUserControl>();
-            xzOnly = new Vector3(1.0f,0,1.0f);
+            _body = target.GetComponent<Rigidbody>();
+            _character = target.GetComponent<ThirdPersonCharacter>();
+            _mainCam = Camera.main;
+
+            if (!_character)
+            {
+                throw new Exception("The assigned game object has no ThirdPersonCharacter");
+            }
         }
 
         private void FixedUpdate()
         {
-            return;
-            // read inputs
-            float h = 1.0f;
-            float v = 1.0f;
-            
-            Transform m_Cam = Camera.main.transform;
-
-            // calculate camera relative direction to move:
-            Vector3 m_CamForward = Vector3.Scale(m_Cam.forward, new Vector3(1, 0, 1)).normalized;
-            Vector3 m_Move = v*m_CamForward + h*m_Cam.right;
-            
-            Debug.Log(String.Format("{0} {1} {2}", m_Move.x, m_Move.y, m_Move.z));
-
-#if !MOBILE_INPUT
-            // walk speed multiplier
-            if (Input.GetKey(KeyCode.LeftShift)) m_Move *= 0.5f;
-#endif
-
-            // pass all parameters to the character control script
-            ctrl.Character().Move(m_Move, false, false);
-
-            return;
-            if (!Input.GetMouseButton(0)) return;
-
-            Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-            RaycastHit hit;
-
-            if (!Physics.Raycast(ray, out hit))
+            if (false == Input.GetMouseButton(0))
             {
                 return;
             }
 
-            Vector3 direction = (hit.point - body.position);
+            CalculateDistance();
+            ApplySpeed();
 
-            // ctrl.Character().Move(1.0f * Vector3.forward +  * Vector3.right);
-            
-            // The further the mouse away the faster
-            Vector3 move = Vector3.Scale(direction, xzOnly);
-            move = Vector3.Min(new Vector3(1,0,1), move);
-            move = Vector3.Max(new Vector3(-1,0,-1), move);
+            _character.Move(_movement);
+        }
 
-            // Vector3 move = Vector3.Scale(direction, xzOnly).normalized.Scale(xzOnly);
+        /// <summary>
+        /// Determine speed by mouse-to-char distance
+        /// 
+        /// The mouse will allow the character to sneak
+        /// and run depending on the pointer-to-character distance on the screen.
+        /// 
+        /// <see cref="CalculateDistance"/>
+        /// </summary>
+        private void ApplySpeed()
+        {
+            _movement /= pointerSneakRange;
+            _movement = Vector3.Min(_one, _movement);
+        }
+
+        private void CalculateDistance()
+        {
+            _ray = _mainCam.ScreenPointToRay(Input.mousePosition);
+
+            if (!Physics.Raycast(_ray, out _hit))
+            {
+                // Click is outside of the map
+                return;
+                
+                // @todo B UX user can get stuck when no GameObject is on the ground
+                // Example: Level design is a skybox/nothing on the ground and just a small path 
+            }
             
-            Debug.Log(String.Format("{0} {1} {2}", move.x, move.y, move.z));
-            
-            ctrl.Character().Move(move, false, false);
-            //ctrl.Character().Move(new Vector3(2.0f, 0, 0), false, false);
+            // @todo C UX char changes speed unintended
+            // Example: An object on Z=10 has a different distance from the player body (in XY)
+            // ... than the very same object on Z=0 due to the perspective,
+            // ... so without moving the mouse the distance suddenly changes.
+            _movement = (_hit.point - _body.position);
+            _movement.y = 0; // we don't care about height differences for movement
         }
     }
 }
